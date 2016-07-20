@@ -202,6 +202,11 @@ void disableRawMode(int fd) {
 /* Called at exit to avoid remaining in raw mode. */
 void editorAtExit(void) {
     disableRawMode(STDIN_FILENO);
+    char* restoreTerm[] = {"tput", "rmcup", NULL};
+    if (fork() == 0) {
+      execvp(restoreTerm[0], restoreTerm);
+    }
+    //write(STDOUT_FILENO, "\e[?1049l", 9);
 }
 
 /* Raw mode: 1960 magic shit. */
@@ -1273,6 +1278,12 @@ int editorFileWasModified(void) {
 }
 
 void initEditor(void) {
+    //write(STDOUT_FILENO, "\e[?1049h", 9);
+    char* saveTerm[] = {"tput", "smcup", NULL};
+    if (fork() == 0) {
+      execvp(saveTerm[0], saveTerm);
+    }
+
     E.cx = 0;
     E.cy = 0;
     E.rowoff = 0;
@@ -1302,7 +1313,7 @@ int main(int argc, char **argv) {
     editorOpen(argv[1]);
     enableRawMode(STDIN_FILENO);
     editorSetStatusMessage(
-        "HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
+        "HELP: Ctrl-X = save | Ctrl-C = quit | Ctrl-S = search");
     while(1) {
         editorRefreshScreen();
         editorProcessKeypress(STDIN_FILENO);
