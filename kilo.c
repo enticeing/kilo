@@ -120,6 +120,7 @@ enum KEY_ACTION{
         CTRL_L = 12,        /* Ctrl+l */
         ENTER = 13,         /* Enter */
         CTRL_Q = 17,        /* Ctrl-q */
+        CTRL_R = 18,
         CTRL_S = 19,        /* Ctrl-s */
         CTRL_U = 21,        /* Ctrl-u */
         CTRL_X = 24,
@@ -1018,7 +1019,7 @@ void editorFind(int fd) {
         if (c == DEL_KEY || c == CTRL_H || c == BACKSPACE) {
             if (qlen != 0) query[--qlen] = '\0';
             last_match = -1;
-        } else if (c == ESC || c == ENTER) {
+        } else if (c == ESC || c == ENTER || c == ARROW_LEFT || c == ARROW_RIGHT) {
             if (c == ESC) {
                 E.cx = saved_cx; E.cy = saved_cy;
                 E.coloff = saved_coloff; E.rowoff = saved_rowoff;
@@ -1026,9 +1027,9 @@ void editorFind(int fd) {
             FIND_RESTORE_HL;
             editorSetStatusMessage("");
             return;
-        } else if (c == ARROW_RIGHT || c == ARROW_DOWN) {
+        } else if (c == ARROW_DOWN || c == CTRL_S) {
             find_next = 1;
-        } else if (c == ARROW_LEFT || c == ARROW_UP) {
+        } else if (c == ARROW_UP || c == CTRL_R) {
             find_next = -1;
         } else if (isprint(c)) {
             if (qlen < KILO_QUERY_LEN) {
