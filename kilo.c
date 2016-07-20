@@ -831,6 +831,31 @@ writeerr:
     return 1;
 }
 
+void MoveToBeginningOfRow() {
+    erow* row = &E.row[E.rowoff + E.cy];
+    char* contents = row->chars;
+    size_t rowlen = strlen(contents);
+
+    if (rowlen == 0) {
+        return;
+    }
+
+    for (int i = 0; i < rowlen; i++) {
+        if (contents[i] > 33) {
+            E.cx = i;
+            return;
+        }
+    }
+
+    E.cx = 0;
+    return;
+}
+
+void MoveToEndOfRow() {
+    erow* row = &E.row[E.rowoff + E.cy];
+    E.cx = strlen(row->chars);
+}
+
 /* ============================= Terminal update ============================ */
 
 /* We define a very simple "append buffer" structure, that is an heap
@@ -1173,6 +1198,12 @@ void editorProcessKeypress(int fd) {
     switch(c) {
     case ENTER:         /* Enter */
         editorInsertNewline();
+        break;
+    case CTRL_A:
+        MoveToBeginningOfRow();
+        break;
+    case CTRL_E:
+        MoveToEndOfRow();
         break;
     case CTRL_Q:        /* Ctrl-q */
         /* We ignore ctrl-q, it can't be so simple to lose the changes
