@@ -110,8 +110,10 @@ static struct editorConfig E;
 
 enum KEY_ACTION{
         KEY_NULL = 0,       /* NULL */
+        CTRL_A = 1,
         CTRL_C = 3,         /* Ctrl-c */
         CTRL_D = 4,         /* Ctrl-d */
+        CTRL_E = 5,
         CTRL_F = 6,         /* Ctrl-f */
         CTRL_H = 8,         /* Ctrl-h */
         TAB = 9,            /* Tab */
@@ -120,6 +122,7 @@ enum KEY_ACTION{
         CTRL_Q = 17,        /* Ctrl-q */
         CTRL_S = 19,        /* Ctrl-s */
         CTRL_U = 21,        /* Ctrl-u */
+        CTRL_X = 24,
         ESC = 27,           /* Escape */
         BACKSPACE =  127,   /* Backspace */
         /* The following are just soft codes, not really reported by the
@@ -1159,9 +1162,9 @@ void editorMoveCursor(int key) {
 
 /* Process events arriving from the standard input, which is, the user
  * is typing stuff on the terminal. */
-#define KILO_QUIT_TIMES 3
+#define KILO_QUIT_TIMES 1
 void editorProcessKeypress(int fd) {
-    /* When the file is modified, requires Ctrl-q to be pressed N times
+    /* When the file is modified, requires Ctrl-c to be pressed N times
      * before actually quitting. */
     static int quit_times = KILO_QUIT_TIMES;
 
@@ -1170,24 +1173,24 @@ void editorProcessKeypress(int fd) {
     case ENTER:         /* Enter */
         editorInsertNewline();
         break;
-    case CTRL_C:        /* Ctrl-c */
-        /* We ignore ctrl-c, it can't be so simple to lose the changes
+    case CTRL_Q:        /* Ctrl-q */
+        /* We ignore ctrl-q, it can't be so simple to lose the changes
          * to the edited file. */
         break;
-    case CTRL_Q:        /* Ctrl-q */
+    case CTRL_C:        /* Ctrl-c */
         /* Quit if the file was already saved. */
         if (E.dirty && quit_times) {
             editorSetStatusMessage("WARNING!!! File has unsaved changes. "
-                "Press Ctrl-Q %d more times to quit.", quit_times);
+                "Press Ctrl-C 1 more time to quit.", quit_times);
             quit_times--;
             return;
         }
         exit(0);
         break;
-    case CTRL_S:        /* Ctrl-s */
+    case CTRL_X:        /* Ctrl-x */
         editorSave();
         break;
-    case CTRL_F:
+    case CTRL_S:
         editorFind(fd);
         break;
     case BACKSPACE:     /* Backspace */
