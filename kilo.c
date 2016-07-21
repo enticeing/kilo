@@ -110,8 +110,8 @@ static struct editorConfig E;
 enum KEY_ACTION{
         KEY_NULL = 0,       /* NULL */
         CTRL_A = 1, CTRL_C = 3, CTRL_E = 5, CTRL_K = 11, CTRL_H = 8, TAB = 9,
-        CTRL_L = 12, ENTER = 13, CTRL_Q = 17, CTRL_R = 18, CTRL_S = 19,
-        CTRL_X = 24, ESC = 27, BACKSPACE =  127,
+        CTRL_L = 12, CTRL_N = 14, CTRL_P = 16, ENTER = 13, CTRL_Q = 17,
+        CTRL_R = 18, CTRL_S = 19, CTRL_X = 24, ESC = 27, BACKSPACE =  127,
         /* The following are just soft codes, not really reported by the
          * terminal directly. */
         ARROW_LEFT = 1000, ARROW_RIGHT, ARROW_UP, ARROW_DOWN,
@@ -1142,9 +1142,25 @@ void editorMoveCursor(int key) {
             E.cy -= 1;
         }
         break;
+    case CTRL_P:
+        if (E.cy == 0) {
+            if (E.rowoff) E.rowoff--;
+        } else {
+            E.cy -= 1;
+        }
+        break;
     case ARROW_DOWN:
         if (filerow < E.numrows) {
             if (E.cy == E.screenrows-1) {
+                E.rowoff++;
+            } else {
+                E.cy += 1;
+            }
+        }
+        break;
+    case CTRL_N:
+        if (filerow < E.numrows) {
+            if(E.cy == E.screenrows-1) {
                 E.rowoff++;
             } else {
                 E.cy += 1;
@@ -1239,6 +1255,8 @@ void editorProcessKeypress(int fd) {
     case ARROW_DOWN:
     case ARROW_LEFT:
     case ARROW_RIGHT:
+    case CTRL_N:
+    case CTRL_P:
         editorMoveCursor(c);
         break;
     case CTRL_L: /* ctrl+l, clear screen */
