@@ -34,7 +34,6 @@
 
 #define KILO_VERSION "0.0.1"
 
-#define _BSD_SOURCE
 #define _GNU_SOURCE
 
 #include <termios.h>
@@ -50,6 +49,7 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <fcntl.h>
+#include <time.h>
 
 /* Syntax highlight types */
 #define HL_NORMAL 0
@@ -87,7 +87,7 @@ typedef struct erow {
 } erow;
 
 typedef struct hlcolor {
-    int r,g,b;
+    int r, g, b;
 } hlcolor;
 
 struct editorConfig {
@@ -115,6 +115,7 @@ enum KEY_ACTION{
         CTRL_D = 4,         /* Ctrl-d */
         CTRL_E = 5,
         CTRL_F = 6,         /* Ctrl-f */
+        CTRL_K = 11,
         CTRL_H = 8,         /* Ctrl-h */
         TAB = 9,            /* Tab */
         CTRL_L = 12,        /* Ctrl+l */
@@ -202,11 +203,15 @@ void disableRawMode(int fd) {
 /* Called at exit to avoid remaining in raw mode. */
 void editorAtExit(void) {
     disableRawMode(STDIN_FILENO);
-    char* restoreTerm[] = {"tput", "rmcup", NULL};
-    if (fork() == 0) {
-      execvp(restoreTerm[0], restoreTerm);
+
+    FILE* restoreScreen = popen("tput rmcup", "r");
+    char* restoreCode[16];
+    for(int i = 0; i < 16; i++) {
+        restoreCode[i] = 0;
     }
-    //write(STDOUT_FILENO, "\e[?1049l", 9);
+    read(fileno(restoreScreen), restoreCode, 16);
+    write(STDOUT_FILENO, restoreCode, 16);
+    pclose(restoreScreen);
 }
 
 /* Raw mode: 1960 magic shit. */
@@ -836,18 +841,26 @@ writeerr:
     return 1;
 }
 
+int overrideBegin = 0;
 void MoveToBeginningOfRow() {
     erow* row = &E.row[E.rowoff + E.cy];
     char* contents = row->chars;
     size_t rowlen = strlen(contents);
 
+    if (overrideBegin) {
+      overrideBegin = 0;
+      E.cx = 0;
+      return;
+    }
+
     if (rowlen == 0) {
         return;
     }
 
-    for (int i = 0; i < rowlen; i++) {
+    for (int i = 0; i < (int)rowlen; i++) {
         if (contents[i] > 33) {
             E.cx = i;
+            overrideBegin = 1;
             return;
         }
     }
@@ -1234,6 +1247,9 @@ void editorProcessKeypress(int fd) {
     case CTRL_S:
         editorFind(fd);
         break;
+    case CTRL_K:
+        editorDelRow(E.rowoff+E.cy);
+        break;
     case BACKSPACE:     /* Backspace */
     case CTRL_H:        /* Ctrl-h */
     case DEL_KEY:
@@ -1279,10 +1295,15 @@ int editorFileWasModified(void) {
 
 void initEditor(void) {
     //write(STDOUT_FILENO, "\e[?1049h", 9);
-    char* saveTerm[] = {"tput", "smcup", NULL};
-    if (fork() == 0) {
-      execvp(saveTerm[0], saveTerm);
+
+    FILE* saveScreen = popen("tput smcup", "r");
+    char* saveCode[16];
+    for (int i = 0; i < 16; i++) {
+        saveCode[i] = 0;
     }
+    read(fileno(saveScreen), saveCode, 16);
+    write(STDOUT_FILENO, saveCode, 16);
+    pclose(saveScreen);
 
     E.cx = 0;
     E.cy = 0;
