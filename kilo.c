@@ -199,11 +199,10 @@ void disableRawMode(int fd) {
 
 void saveRestoreScreen(int save) {
     FILE* tput;
-    if (save) {
+    if (save)
         tput = popen("tput smcup", "r");
-    } else {
+    if (!save)
         tput = popen("tput rmcup", "r");
-    }
     char* tputCode[16];
     for(int i = 0; i < 16; i++) 
         tputCode[i] = 0;
@@ -845,20 +844,16 @@ writeerr:
     return 1;
 }
 
-void MoveToBeginningOfRow() {
+void moveToBeginningOfRow() {
     char* contents = E.row[E.rowoff+E.cy].chars;
-
-    for (int i = 0; i < E.cx; i++) {
-        if (!(isblank(contents[i]))) {
-            E.cx = i;
-            return;
-        }
+    int pos = 0;
+    for (int i = 0; i < E.cx && isblank(contents[i]); i++) {
+       pos = i+1;
     }
-    E.cx = 0;
-    return;
+    E.cx = pos;
 }
 
-void MoveToEndOfRow() {
+void moveToEndOfRow() {
     E.cx = strlen(E.row[E.rowoff+E.cy].chars);
 }
 
@@ -1208,14 +1203,14 @@ void editorProcessKeypress(int fd) {
         break;
     case CTRL_A:
         if (!abs_begin) {
-            MoveToBeginningOfRow();
+            moveToBeginningOfRow();
             abs_begin = 1;
             return;
         }
         E.cx = 0;
         break;
     case CTRL_E:
-        MoveToEndOfRow();
+        moveToEndOfRow();
         break;
     case CTRL_Q:        /* Ctrl-q */
         /* We ignore ctrl-q, it can't be so simple to lose the changes
