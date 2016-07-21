@@ -1225,11 +1225,9 @@ void editorProcessKeypress(int fd) {
         exit(0);
         break;
     case CTRL_X:        /* Ctrl-x */
-        if (E.dirty) {
-            editorSave();
-        } else {
+        if (!E.dirty)
             exit(0);
-        }
+        editorSave();
         break;
     case CTRL_S:
         editorFind(fd);
