@@ -14,7 +14,7 @@
  *
  *  *  Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- *
+ *
  *  *  Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
@@ -112,9 +112,7 @@ enum KEY_ACTION{
         KEY_NULL = 0,       /* NULL */
         CTRL_A = 1,
         CTRL_C = 3,         /* Ctrl-c */
-        CTRL_D = 4,         /* Ctrl-d */
         CTRL_E = 5,
-        CTRL_F = 6,         /* Ctrl-f */
         CTRL_K = 11,
         CTRL_H = 8,         /* Ctrl-h */
         TAB = 9,            /* Tab */
@@ -123,7 +121,6 @@ enum KEY_ACTION{
         CTRL_Q = 17,        /* Ctrl-q */
         CTRL_R = 18,
         CTRL_S = 19,        /* Ctrl-s */
-        CTRL_U = 21,        /* Ctrl-u */
         CTRL_X = 24,
         ESC = 27,           /* Escape */
         BACKSPACE =  127,   /* Backspace */
@@ -200,18 +197,25 @@ void disableRawMode(int fd) {
     }
 }
 
+void saveRestoreScreen(int save) {
+    FILE* tput;
+    if (save) {
+        tput = popen("tput smcup", "r");
+    } else {
+        tput = popen("tput rmcup", "r");
+    }
+    char* tputCode[16];
+    for(int i = 0; i < 16; i++) 
+        tputCode[i] = 0;
+    read(fileno(tput), tputCode, 16);
+    write(STDOUT_FILENO, tputCode, 16);
+    pclose(tput);
+}
+
 /* Called at exit to avoid remaining in raw mode. */
 void editorAtExit(void) {
     disableRawMode(STDIN_FILENO);
-
-    FILE* restoreScreen = popen("tput rmcup", "r");
-    char* restoreCode[16];
-    for(int i = 0; i < 16; i++) {
-        restoreCode[i] = 0;
-    }
-    read(fileno(restoreScreen), restoreCode, 16);
-    write(STDOUT_FILENO, restoreCode, 16);
-    pclose(restoreScreen);
+    saveRestoreScreen(0);
 }
 
 /* Raw mode: 1960 magic shit. */
@@ -841,37 +845,26 @@ writeerr:
     return 1;
 }
 
-int overrideBegin = 0;
 void MoveToBeginningOfRow() {
-    erow* row = &E.row[E.rowoff + E.cy];
-    char* contents = row->chars;
+    char* contents = E.row[E.rowoff+E.cy].chars;
     size_t rowlen = strlen(contents);
 
-    if (overrideBegin) {
-      overrideBegin = 0;
-      E.cx = 0;
-      return;
-    }
-
-    if (rowlen == 0) {
+    if (rowlen == 0 || E.cx == 0)
         return;
-    }
 
     for (int i = 0; i < (int)rowlen; i++) {
         if (contents[i] > 33) {
             E.cx = i;
-            overrideBegin = 1;
             return;
         }
     }
-
+    
     E.cx = 0;
     return;
 }
 
 void MoveToEndOfRow() {
-    erow* row = &E.row[E.rowoff + E.cy];
-    E.cx = strlen(row->chars);
+    E.cx = strlen(E.row[E.rowoff+E.cy].chars);
 }
 
 /* ============================= Terminal update ============================ */
@@ -1211,6 +1204,7 @@ void editorProcessKeypress(int fd) {
     /* When the file is modified, requires Ctrl-c to be pressed N times
      * before actually quitting. */
     static int quit_times = KILO_QUIT_TIMES;
+    static int abs_begin = 0;
 
     int c = editorReadKey(fd);
     switch(c) {
@@ -1218,7 +1212,12 @@ void editorProcessKeypress(int fd) {
         editorInsertNewline();
         break;
     case CTRL_A:
-        MoveToBeginningOfRow();
+        if (!abs_begin) {
+            MoveToBeginningOfRow();
+            abs_begin = 1;
+            return;
+        }
+        E.cx = 0;
         break;
     case CTRL_E:
         MoveToEndOfRow();
@@ -1285,7 +1284,7 @@ void editorProcessKeypress(int fd) {
         editorInsertChar(c);
         break;
     }
-
+    abs_begin = 0;
     quit_times = KILO_QUIT_TIMES; /* Reset it to the original value. */
 }
 
@@ -1294,17 +1293,7 @@ int editorFileWasModified(void) {
 }
 
 void initEditor(void) {
-    //write(STDOUT_FILENO, "\e[?1049h", 9);
-
-    FILE* saveScreen = popen("tput smcup", "r");
-    char* saveCode[16];
-    for (int i = 0; i < 16; i++) {
-        saveCode[i] = 0;
-    }
-    read(fileno(saveScreen), saveCode, 16);
-    write(STDOUT_FILENO, saveCode, 16);
-    pclose(saveScreen);
-
+    saveRestoreScreen(1);
     E.cx = 0;
     E.cy = 0;
     E.rowoff = 0;
