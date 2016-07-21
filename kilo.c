@@ -198,16 +198,14 @@ void disableRawMode(int fd) {
 }
 
 void saveRestoreScreen(int save) {
+    char tputCode;
     FILE* tput;
     if (save)
         tput = popen("tput smcup", "r");
     if (!save)
         tput = popen("tput rmcup", "r");
-    char* tputCode[16];
-    for(int i = 0; i < 16; i++) 
-        tputCode[i] = 0;
-    read(fileno(tput), tputCode, 16);
-    write(STDOUT_FILENO, tputCode, 16);
+    while(read(fileno(tput), &tputCode, 1) > 0)
+        write(STDOUT_FILENO, &tputCode, 1);
     pclose(tput);
 }
 
