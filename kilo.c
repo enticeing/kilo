@@ -107,34 +107,15 @@ struct editorConfig {
 };
 
 static struct editorConfig E;
-
 enum KEY_ACTION{
         KEY_NULL = 0,       /* NULL */
-        CTRL_A = 1,
-        CTRL_C = 3,         /* Ctrl-c */
-        CTRL_E = 5,
-        CTRL_K = 11,
-        CTRL_H = 8,         /* Ctrl-h */
-        TAB = 9,            /* Tab */
-        CTRL_L = 12,        /* Ctrl+l */
-        ENTER = 13,         /* Enter */
-        CTRL_Q = 17,        /* Ctrl-q */
-        CTRL_R = 18,
-        CTRL_S = 19,        /* Ctrl-s */
-        CTRL_X = 24,
-        ESC = 27,           /* Escape */
-        BACKSPACE =  127,   /* Backspace */
+        CTRL_A = 1, CTRL_C = 3, CTRL_E = 5, CTRL_K = 11, CTRL_H = 8, TAB = 9,
+        CTRL_L = 12, ENTER = 13, CTRL_Q = 17, CTRL_R = 18, CTRL_S = 19,
+        CTRL_X = 24, ESC = 27, BACKSPACE =  127,
         /* The following are just soft codes, not really reported by the
          * terminal directly. */
-        ARROW_LEFT = 1000,
-        ARROW_RIGHT,
-        ARROW_UP,
-        ARROW_DOWN,
-        DEL_KEY,
-        HOME_KEY,
-        END_KEY,
-        PAGE_UP,
-        PAGE_DOWN
+        ARROW_LEFT = 1000, ARROW_RIGHT, ARROW_UP, ARROW_DOWN,
+        DEL_KEY, HOME_KEY, END_KEY, PAGE_UP, PAGE_DOWN
 };
 
 void editorSetStatusMessage(const char *fmt, ...);
@@ -568,7 +549,7 @@ void editorUpdateRow(erow *row) {
     for (j = 0; j < row->size; j++) {
         if (row->chars[j] == TAB) {
             row->render[idx++] = ' ';
-            while((idx+1) % 8 != 0) row->render[idx++] = ' ';
+            while((idx+1) % 4 != 0) row->render[idx++] = ' ';
         } else {
             row->render[idx++] = row->chars[j];
         }
@@ -990,7 +971,7 @@ void editorRefreshScreen(void) {
     erow *row = (filerow >= E.numrows) ? NULL : &E.row[filerow];
     if (row) {
         for (j = E.coloff; j < (E.cx+E.coloff); j++) {
-            if (j < row->size && row->chars[j] == TAB) cx += 7-((cx)%8);
+            if (j < row->size && row->chars[j] == TAB) cx += 3-((cx)%4);
             cx++;
         }
     }
