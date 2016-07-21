@@ -847,18 +847,13 @@ writeerr:
 
 void MoveToBeginningOfRow() {
     char* contents = E.row[E.rowoff+E.cy].chars;
-    size_t rowlen = strlen(contents);
 
-    if (rowlen == 0 || E.cx == 0)
-        return;
-
-    for (int i = 0; i < (int)rowlen; i++) {
-        if (contents[i] > 33) {
+    for (int i = 0; i < E.cx; i++) {
+        if (!(isblank(contents[i]))) {
             E.cx = i;
             return;
         }
     }
-    
     E.cx = 0;
     return;
 }
